@@ -1,7 +1,7 @@
 CC = clang
 cnn.o :
-	$(CC) -o cnn.o cnn.c
+	$(CC) -o main.o main.c
 clean :
 	rm *.o
 test :
-	./cnn.o
+	./main.o

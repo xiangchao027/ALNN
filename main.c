@@ -14,6 +14,16 @@
 //      l : long int = long integer
 //      f : float = float number
 //      d : double = double
+enum {
+    T_BINARY = 'b',
+    T_CHAR = 'c',
+    T_BYTE = 'u',
+    T_SHORT = 's',
+    T_LONG = 'l',
+    T_FLOAT = 'f',
+    T_DOUBLE = 'd'
+};
+
 typedef struct T_MATRIX {
     int     num;        // number of instances
     int     col;        // column count
@@ -107,6 +117,7 @@ void read_mnist(
 
     int magic_number;
     FILE * fp;
+    int i, n;
 
     // memory reset
     memset( train_input_path, 0, sizeof train_input_path );
@@ -148,7 +159,22 @@ void read_mnist(
     fread_h2l( &(train_input->row), sizeof train_input->row, fp );
     fread_h2l( &(train_input->col), sizeof train_input->col, fp );
 
+    // read pixels
+    train_input->type = T_BYTE;
+    n = train_input->num * train_input->row * train_input->col;
+    train_input->elem = (unsigned char*)malloc(sizeof (unsigned char) * n );
+    if ( !train_input->elem ) {
+        fprintf(stderr, "memory allocation error!\n" );
+    }
+    i = fread( train_input->elem, sizeof (unsigned char), n, fp );
+    if ( i != n ) {
+        fprintf(stderr, "read error :[%s]!\n", train_input_path );
+        exit( 1 );
+    }
+    
 
+    // deallocation
+    free( train_input->elem );
 }
 
 void read_cifar10(

@@ -108,6 +108,12 @@ void read_mnist(
     int magic_number;
     FILE * fp;
 
+    // memory reset
+    memset( train_input_path, 0, sizeof train_input_path );
+    memset( train_label_path, 0, sizeof train_label_path );
+    memset( test_input_path, 0, sizeof test_input_path );
+    memset( test_label_path, 0, sizeof test_label_path );
+
     strcat( train_input_path, f );
     strcat( train_input_path, "/" );
     strcat( train_input_path, "train_input" );

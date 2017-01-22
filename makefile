@@ -4,4 +4,4 @@ cnn.o :
 clean :
 	rm *.o
 test :
-	./main.o
+	./main.o 1

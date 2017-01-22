@@ -141,7 +141,7 @@ void read_mnist(
     fread_h2l( &(train_input->num), sizeof train_input->num, fp );
     fread_h2l( &(train_input->row), sizeof train_input->row, fp );
     fread_h2l( &(train_input->col), sizeof train_input->col, fp );
-    
+
 
 }
 
@@ -201,8 +201,16 @@ int main(int argc, const char ** argv ) {
     }
 
     // begin to read dataset into memory
-    matrix train_input, train_label, test_input, test_label;
-    read_mnist( &train_input, &train_label, &test_input, &test_label, "MNIST" );
+    if ( data_id == 1 ) { // MNIST
+        matrix train_input, train_label, test_input, test_label;
+        read_mnist(
+            &train_input,
+            &train_label,
+            &test_input,
+            &test_label,
+            "./MNIST"
+        );
+    }
 
 
 

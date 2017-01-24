@@ -1,14 +1,30 @@
+#ifndef ALNN_H
+#define ALNN_H  1
+
 //alnn.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "matrix.h"
+
 // Layer Structure
 typedef struct T_LAYER {
     char    _type;
-    int     _size;
-    float   *_map;
-} * layer;
+    matrix  _map;
+} layer;
+
+// conections
+typedef struct T_CONNECTION {
+    matrix  _matrix;
+} connection;
+
+// neural network
+typedef struct T_NEURAL_NETWORK {
+    layer*  _layers;
+    connection * _connections;
+    int     _depth;
+} neural_network;
 
 #ifndef LAYER_TYPE
 #define INPUT_LAYER             'i'
@@ -18,31 +34,51 @@ typedef struct T_LAYER {
 #endif
 
 // build layer
-layer create_layer( char type, int size ) {
-    layer _layer = (layer) malloc( sizeof(struct T_LAYER) );
+int create_layer( layer * _layer, char type, int row, int col ) {
     _layer->_type = type;
-    _layer->_size = size;
-    _layer->_map = (float*) malloc( sizeof(float) * size );
-    memset( (char*)_layer, 0, sizeof(float) * size );
-    return _layer;
+    _layer->_map.num = 1;
+    _layer->_map.row = row;
+    _layer->_map.col = col;
+    return alloc_matrix( &(_layer->_map) );
 }
 
 // build self-organized-map layer
-layer make_som_layer( int size ) {
-    return create_layer( SELF_ORGANIZED_MAP, size );
+int make_som_layer( layer * som_layer, int row, int col ) {
+    return create_layer( som_layer, SELF_ORGANIZED_MAP, row, col );
 }
 
 // build fully-connected neural network
-layer make_fully_connected_layer( int size ) {
-    return create_layer( FULL_CONNECTED_LAYER, size );
+int make_fully_connected_layer( layer * full_layer, int row, int col ) {
+    return create_layer( full_layer, FULL_CONNECTED_LAYER, row, col );
 }
 
 // build sparse-connected neural network
-layer make_sparse_connected_layer( int size ) {
-    return create_layer( SPARSE_CONNECTED_LAYER, size );
+int make_sparse_connected_layer( layer * sparse_layer, int row, int col ) {
+    return create_layer( sparse_layer, SPARSE_CONNECTED_LAYER, row, col );
 }
 
 // build input layer
-layer make_input_layer( int size ) {
-    return create_layer( INPUT_LAYER, size );
+int make_input_layer( layer * input_layer, int row, int col ) {
+    return create_layer( input_layer, INPUT_LAYER, row, col );
 }
+
+int neural_network_append_layer( neural_network * network, layer new_layer );
+
+// compute forward
+void compute_forward( neural_network * network );
+
+// compute backward
+void compute_backward( neural_network * network );
+
+// add new instance to neural network input layer
+void neural_network_train( neural_network * network, matrix * input );
+
+// test model
+void neural_network_test( neural_network * network, matrix * input );
+
+
+
+
+
+
+#endif

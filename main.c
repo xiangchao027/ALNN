@@ -2,35 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-//#include "alnn.h"
-
-
-// basic data structures
-// matrix.type :
-//      b : unsigned char = binary, constrainted by 0/1 check
-//      c : char = character, from 0 to 127
-//      u : unsigned char = byte
-//      s : short int = short integer
-//      l : long int = long integer
-//      f : float = float number
-//      d : double = double
-enum {
-    T_BINARY = 'b',
-    T_CHAR = 'c',
-    T_BYTE = 'u',
-    T_SHORT = 's',
-    T_LONG = 'l',
-    T_FLOAT = 'f',
-    T_DOUBLE = 'd'
-};
-
-typedef struct T_MATRIX {
-    int     num;        // number of instances
-    int     col;        // column count
-    int     row;        // row count
-    char    type;       // element type
-    void*   elem;       // element values
-} matrix;
+#include "bmp.h"
+#include "matrix.h"
+#include "alnn.h"
 
 // declarations
 void help_msg();
@@ -171,10 +145,6 @@ void read_mnist(
         fprintf(stderr, "read error :[%s]!\n", train_input_path );
         exit( 1 );
     }
-    
-
-    // deallocation
-    free( train_input->elem );
 }
 
 void read_cifar10(
@@ -216,7 +186,10 @@ void read_svhn(
 
 
 int main(int argc, const char ** argv ) {
-    int data_id;
+    int data_id, i, n;
+    pixel * im_data;
+    matrix train_input, train_label, test_input, test_label;
+
     // read MNIST dataset
     if ( argc < 2 ) {
         help_msg();
@@ -234,7 +207,6 @@ int main(int argc, const char ** argv ) {
 
     // begin to read dataset into memory
     if ( data_id == 1 ) { // MNIST
-        matrix train_input, train_label, test_input, test_label;
         read_mnist(
             &train_input,
             &train_label,
@@ -242,9 +214,44 @@ int main(int argc, const char ** argv ) {
             &test_label,
             "./MNIST"
         );
+
+        /******* test for reading MNIST dataset ok! ********
+        // show the images read so far
+        pixel * im_data = (pixel*) malloc(
+            sizeof(pixel) * train_input.row * train_input.col
+        );
+        if ( !im_data ) {
+            fprintf(stderr, "allocation error!\n" );
+            exit( 1 );
+        }
+        // copy data from dataset matrix to pixel vector
+        int i, n;
+        n = train_input.row * train_input.col;
+        for ( i = 0; i < n; i++ ) {
+            ((unsigned char*)im_data)[4*i] = ((char*)(train_input.elem))[i];
+            ((unsigned char*)im_data)[4*i + 1] = ((char*)(train_input.elem))[i];
+            ((unsigned char*)im_data)[4*i + 2] = ((char*)(train_input.elem))[i];
+        }
+
+        draw_by_pixel_array(
+            LEFT_TOP,
+            im_data,
+            train_input.col,
+            train_input.row,
+            "test.bmp"
+        );
+
+        free( im_data );
+        ****** test for reading MNIST dataset ok! **********/
+
+
     }
 
 
+    free_matrix( &train_input );
+    //free_matrix( &train_label );
+    //free_matrix( &test_input );
+    //free_matrix( &test_label );
 
     return 0;
 }

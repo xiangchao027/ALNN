@@ -36,12 +36,14 @@ typedef struct T_MATRIX {
 } matrix;
 
 // basic operations for this data strcuture
-int alloc_matrix( matrix * m );
-void free_matrix( matrix * m );
-int get_elem( void * elem, matrix * m, int num, int row, int col );
+int matrix_alloc( matrix * m );
+void matrix_free( matrix * m );
+int matrix_get_elem( void * elem, matrix * m, int num, int row, int col );
+void matrix_set_zero( matrix * m );
+void matrix_set_rand( matrix * m );
 
 // definitions of declared functions
-int alloc_matrix( matrix * m ) {
+int matrix_alloc( matrix * m ) {
     size_t n;
     if ( !m ) {
         return R_FALSE;
@@ -50,7 +52,7 @@ int alloc_matrix( matrix * m ) {
         return R_FALSE;
     }
     if ( m->type == T_BINARY ) {
-        n = ( m->num * m->row * m->col + 8 ) / 8 * sizeof(unsigned char);
+        n = ( m->num * m->row * m->col + 8 ) / 8;
         m->elem = (unsigned char *)malloc( n );
     } else if ( m->type == T_CHAR ) {
         n = m->num * m->row * m->col * sizeof(char);
@@ -77,11 +79,11 @@ int alloc_matrix( matrix * m ) {
 }
 
 // deallocation of matrix
-void free_matrix( matrix * m ) {
+void matrix_free( matrix * m ) {
     free( m->elem );
 }
 
-int get_elem( void * elem, matrix * m, int num, int row, int col ) {
+int matrix_get_elem( void * elem, matrix * m, int num, int row, int col ) {
     size_t i;
     unsigned char binary_elem;
 
@@ -98,7 +100,7 @@ int get_elem( void * elem, matrix * m, int num, int row, int col ) {
         return R_FALSE;
     }
     if ( m->type == T_BINARY ) {
-        i = num * m->row * m->col + row * m->col + col;
+        i = m->num * m->row * m->col + m->row * m->col + col;
         binary_elem = ((unsigned char *)m->elem)[i/8];
         i = i % 8;
         if ( i == 0 ) {
@@ -108,7 +110,7 @@ int get_elem( void * elem, matrix * m, int num, int row, int col ) {
         } else if ( i == 2 ) {
             *((char *)elem) = binary_elem & 0x04;
         } else if ( i == 3 ) {
-            *((char *)elem) = binary_elem & 0x08;
+\            *((char *)elem) = binary_elem & 0x08;
         } else if ( i == 4 ) {
             *((char *)elem) = binary_elem & 0x010;
         } else if ( i == 5 ) {
@@ -139,6 +141,38 @@ int get_elem( void * elem, matrix * m, int num, int row, int col ) {
     }
     return R_TRUE;
 }
+//
+void matrix_set_zero( matrix * m ) {
+    int i, n, u;
+    if ( m->type == T_BINARY ) {
+        u = 1;
+        n = ( m->num * m->row * m->col + 8 ) / 8;
+    } else if ( m->type == T_CHAR ) {
+        u  = 1;
+        n = m->row * m->col;
+    } else if ( m->type == T_BYTE ) {
+        u = 1;
+        n = m->row * m->col;
+    } else if ( m->type == T_SHORT ) {
+        u = sizeof( short int );
+        n = m->row * m->col;
+    } else if ( m->type == T_LONG ) {
+        u = sizeof( long int );
+        n = m->row * m
+    }
+    T_BINARY = 'b',
+    T_CHAR = 'c',
+    T_BYTE = 'u',
+    T_SHORT = 's',
+    T_LONG = 'l',
+    T_FLOAT = 'f',
+    T_DOUBLE = 'd';
+    for ( i=0; i<m->num; i++ ) {
+        memset( m->elem + i * ( m->row * m->col ) )
+    }
+}
+
+void matrix_set_rand( matrix * m );
 
 
 #endif

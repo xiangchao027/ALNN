@@ -8,6 +8,9 @@
 
 #include "matrix.h"
 
+// the limit of depth of neural network
+enum { MAX_NEURAL_NETWORK_DEPTH = 100 };
+
 // Layer Structure
 typedef struct T_LAYER {
     char    _type;
@@ -16,14 +19,15 @@ typedef struct T_LAYER {
 
 // conections
 typedef struct T_CONNECTION {
-    matrix  _matrix;
+    matrix  _last;  // last state matrix
+    matrix  _now;   // current state matrix
 } connection;
 
 // neural network
 typedef struct T_NEURAL_NETWORK {
-    layer*  _layers;
-    connection * _connections;
-    int     _depth;
+    layer*          _layers;
+    connection *    _connections;
+    int             _depth;
 } neural_network;
 
 #ifndef LAYER_TYPE
@@ -40,6 +44,29 @@ int create_layer( layer * _layer, char type, int row, int col ) {
     _layer->_map.row = row;
     _layer->_map.col = col;
     return alloc_matrix( &(_layer->_map) );
+}
+
+// destroy a layer
+void destroy_layer( layer * _layer ) {
+    free_matrix( &(_layer->_map) );
+}
+
+// refers to a layer: copy a layer without matrix reallocation
+int ref_layer( layer * new_layer, layer * ref_layer ) {
+    if ( !ref_layer || !new_layer ) {
+        return R_FALSE;
+    }
+    memcpy( new_layer, ref_layer, sizeof(layer) );
+    return R_TRUE;
+}
+
+// copy a layer with matrix reallocation
+int copy_layer( layer * new_layer, layer * template_layer ) {
+    if ( !new_layer || !template_layer ) {
+        return R_FALSE;
+    }
+    memcpy( new_layer, template_layer, sizeof(layer) );
+    return alloc_matrix( &(new_layer->_map) );
 }
 
 // build self-organized-map layer
@@ -62,7 +89,87 @@ int make_input_layer( layer * input_layer, int row, int col ) {
     return create_layer( input_layer, INPUT_LAYER, row, col );
 }
 
-int neural_network_append_layer( neural_network * network, layer new_layer );
+
+// linking layers from input layer to output layer
+// input layer is not necessarily the input layer for entire network
+// output layer is not necessarily the output layer for entire network
+int link_layers(
+    connection * new_connection,
+    layer * input_layer,
+    layer * output_layer
+) {
+    if ( !input_layer || !output_layer ) {
+        return R_FALSE;
+    }
+    if (output_layer->_type == FULL_CONNECTED_LAYER ) {
+        // last
+        new_connection->_last.num = output_layer->_map.row * output_layer->_map.col;
+        new_connection->_last.col = input_layer->_map.col;
+        new_connection->_last.row = input_layer->_map.row;
+        // now is the same
+        new_connection->_now.num = output_layer->_map.row * output_layer->_map.col;
+        new_connection->_now.col = input_layer->_map.col;
+        new_connection->_now.row = input_layer->_map.row;
+        // reset matrix
+        alloc_matrix( &new_connection->_last );
+        alloc_matrix( &new_connection->_now );
+        
+        // done
+    } else if ( output_layer->_type == SELF_ORGANIZED_MAP ) {
+
+    } else if ( output_layer->_type == SPARSE_CONNECTED_LAYER ) {
+    } else {
+        return R_FALSE;
+    }
+    return R_TRUE;
+}
+
+
+// create a neural network with given layer number( depth )
+int create_neural_network( neural_network * network ) {
+    if ( !network ) {
+        return R_FALSE;
+    }
+    network->_layers = (layer *) malloc(
+        sizeof(layer) * MAX_NEURAL_NETWORK_DEPTH
+    );
+    network->_connections = (connection *) malloc(
+        sizeof(connection) * (MAX_NEURAL_NETWORK_DEPTH - 1)
+    );
+    network->_depth = 0;
+    return R_TRUE;
+}
+
+// add new layer to network
+// notice: do not call destroy_layer() outside this function, this will crash
+// application, because this function refers layers without reallocation.
+int neural_network_append_layer( neural_network * network, layer * new_layer ) {
+    if ( (!network) || (!new_layer) ) {
+        return R_FALSE;
+    }
+    if ( network->_depth >= MAX_NEURAL_NETWORK_DEPTH ) {
+        return R_FALSE;
+    }
+    if ( !ref_layer( network->_layers + network->_depth, new_layer ) ) {
+        return R_FALSE;
+    }
+    network->_depth ++;
+
+    // add connections to neural neural network
+    if ( network->_depth == 1 ) { // if only input layer, then exit;
+        return R_TRUE;
+    }
+    if( !link_layers(
+        network->_connections + (network->_depth - 2),
+        network->_layers + (_depth - 2),
+        network->_layers + (_depth - 1)
+    ) ) {
+        return R_FALSE;
+    }
+
+
+    return R_TRUE;
+}
 
 // compute forward
 void compute_forward( neural_network * network );
@@ -75,10 +182,6 @@ void neural_network_train( neural_network * network, matrix * input );
 
 // test model
 void neural_network_test( neural_network * network, matrix * input );
-
-
-
-
 
 
 #endif

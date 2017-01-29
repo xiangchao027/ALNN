@@ -43,12 +43,12 @@ int create_layer( layer * _layer, char type, int row, int col ) {
     _layer->_map.num = 1;
     _layer->_map.row = row;
     _layer->_map.col = col;
-    return alloc_matrix( &(_layer->_map) );
+    return matrix_alloc( &(_layer->_map) );
 }
 
 // destroy a layer
 void destroy_layer( layer * _layer ) {
-    free_matrix( &(_layer->_map) );
+    matrix_free( &(_layer->_map) );
 }
 
 // refers to a layer: copy a layer without matrix reallocation
@@ -66,7 +66,7 @@ int copy_layer( layer * new_layer, layer * template_layer ) {
         return R_FALSE;
     }
     memcpy( new_layer, template_layer, sizeof(layer) );
-    return alloc_matrix( &(new_layer->_map) );
+    return matrix_alloc( &(new_layer->_map) );
 }
 
 // build self-organized-map layer
@@ -111,12 +111,12 @@ int link_layers(
         new_connection->_now.col = input_layer->_map.col;
         new_connection->_now.row = input_layer->_map.row;
         // reset matrix
-        alloc_matrix( &new_connection->_last );
-        alloc_matrix( &new_connection->_now );
-        
+        matrix_alloc( &new_connection->_last );
+        matrix_alloc( &new_connection->_now );
+        matrix_set_zero( &new_connection->_last );
+        matrix_set_zero( &new_connection->_now );
         // done
     } else if ( output_layer->_type == SELF_ORGANIZED_MAP ) {
-
     } else if ( output_layer->_type == SPARSE_CONNECTED_LAYER ) {
     } else {
         return R_FALSE;
@@ -161,8 +161,8 @@ int neural_network_append_layer( neural_network * network, layer * new_layer ) {
     }
     if( !link_layers(
         network->_connections + (network->_depth - 2),
-        network->_layers + (_depth - 2),
-        network->_layers + (_depth - 1)
+        network->_layers + (network->_depth - 2),
+        network->_layers + (network->_depth - 1)
     ) ) {
         return R_FALSE;
     }

@@ -248,10 +248,10 @@ int main(int argc, const char ** argv ) {
     }
 
 
-    free_matrix( &train_input );
-    //free_matrix( &train_label );
-    //free_matrix( &test_input );
-    //free_matrix( &test_label );
+    matrix_free( &train_input );
+    //matrix_free( &train_label );
+    //matrix_free( &test_input );
+    //matrix_free( &test_label );
 
     return 0;
 }

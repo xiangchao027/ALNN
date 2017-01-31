@@ -130,7 +130,7 @@ int matrix_get_elem(
         i = num * m->row * m->col + row * m->col + col;
         binary_elem = ((unsigned char *)m->elem)[i/8];
         i = i % 8;
-        *((char *)elem) = !!(binary_elem & (0x01<<i));
+        *((unsigned char *)elem) = !!(binary_elem & (0x01<<i));
     } else if ( m->type == T_CHAR ) {
         i = num * m->row * m->col + row * m->col + col;
         *((char *)elem) = ((char *)(m->elem))[i];
@@ -214,7 +214,7 @@ int matrix_set_elem(
         i = num * m->row * m->col + row * m->col + col;
         binary_elem = ((unsigned char *)m->elem)[i/8];
         i = i % 8;
-        if ( *((char *)elem) == 0 ) {
+        if ( *((unsigned char *)elem) == 0 ) {
             binary_elem &= (~(0x01<<i));
         } else {
             binary_elem |= (0x01<<i);
@@ -223,22 +223,22 @@ int matrix_set_elem(
         ((unsigned char *)m->elem)[i/8] = binary_elem;
     } else if ( m->type == T_CHAR ) {
         i = num * m->row * m->col + row * m->col + col;
-        *((char *)elem) = ((char *)(m->elem))[i];
+        ((char *)(m->elem))[i] = *((char *)elem);
     } else if ( m->type == T_BYTE ) {
         i = num * m->row * m->col + row * m->col + col;
-        *((unsigned char *)elem) = ((unsigned char *)(m->elem))[i];
+        ((unsigned char *)(m->elem))[i] = *((unsigned char *)elem);
     } else if ( m->type == T_SHORT ) {
         i = num * m->row * m->col + row * m->col + col;
-        *((short int *)elem) = ((short int *)(m->elem))[i];
+        ((short int *)(m->elem))[i] = *((short int *)elem);
     } else if ( m->type == T_LONG ) {
         i = num * m->row * m->col + row * m->col + col;
-        *((long int *)elem) = ((long int *)(m->elem))[i];
+        ((long int *)(m->elem))[i] = *((long int *)elem);
     } else if ( m->type == T_FLOAT ) {
         i = num * m->row * m->col + row * m->col + col;
-        *((float *)elem) = ((float *)(m->elem))[i];
+        ((float *)(m->elem))[i] = *((float *)elem);
     } else if ( m->type == T_DOUBLE ) {
         i = num * m->row * m->col + row * m->col + col;
-        *((double *)elem) = ((double *)(m->elem))[i];
+        ((double *)(m->elem))[i] = *((double *)elem);
     } else {
         return R_FALSE;
     }

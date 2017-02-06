@@ -30,105 +30,143 @@ typedef struct T_NEURAL_NETWORK {
     int             _depth;
 } neural_network;
 
-#ifndef LAYER_TYPE
-#define INPUT_LAYER             'i'
-#define SELF_ORGANIZED_MAP      'm'
-#define FULL_CONNECTED_LAYER    'f'
-#define SPARSE_CONNECTED_LAYER  's'
-#endif
+enum LAYER_TYPE {
+    LT_INPUT    =   'i',
+    LT_SOM      =   'm',
+    LT_FULL     =   'f',
+    LT_SPARSE   =   's'
+};
 
+#define CHECK_LAYER_TYPE( _t ) (\
+    _t == LT_INPUT  ||\
+    _t == LT_SOM    ||\
+    _t == LT_FULL   ||\
+    _t == LT_SPARSE\
+)
+
+// ********************* tool functions *********************** //
 // build layer
-int create_layer( layer * _layer, char type, int row, int col ) {
-    _layer->_type = type;
-    _layer->_map.num = 1;
-    _layer->_map.row = row;
-    _layer->_map.col = col;
-    return matrix_alloc( &(_layer->_map) );
+int create_layer(
+    layer * _l,
+    enum LAYER_TYPE _lt,
+    enum ELEMENT_TYPE _et,
+    int row,
+    int col
+) {
+    // check type validality
+    if ( !CHECK_LAYER_TYPE( _lt ) ) {
+        return false;
+    }
+    if ( !CHECK_ELEM_TYPE( _et ) ) {
+        return false;
+    }
+    _l->_type = _lt;
+    _l->_map.type = _et;
+    _l->_map.num = 1;
+    _l->_map.row = row;
+    _l->_map.col = col;
+
+    return matrix_alloc( &(_l->_map) );
 }
 
 // destroy a layer
-void destroy_layer( layer * _layer ) {
-    matrix_free( &(_layer->_map) );
+int destroy_layer( layer * _layer ) {
+    return matrix_free( &(_layer->_map) );
 }
 
 // refers to a layer: copy a layer without matrix reallocation
 int ref_layer( layer * new_layer, layer * ref_layer ) {
     if ( !ref_layer || !new_layer ) {
-        return R_FALSE;
+        return false;
     }
     memcpy( new_layer, ref_layer, sizeof(layer) );
-    return R_TRUE;
+    return true;
 }
 
 // copy a layer with matrix reallocation
-int copy_layer( layer * new_layer, layer * template_layer ) {
-    if ( !new_layer || !template_layer ) {
-        return R_FALSE;
+int copy_layer( layer * _nl, layer * _l ) {
+    if ( !_nl || !_l ) {
+        return false;
     }
-    memcpy( new_layer, template_layer, sizeof(layer) );
-    return matrix_alloc( &(new_layer->_map) );
+    memcpy( _nl, _l, sizeof(layer) );
+    return matrix_alloc( &(_nl->_map) );
 }
-
-// build self-organized-map layer
-int make_som_layer( layer * som_layer, int row, int col ) {
-    return create_layer( som_layer, SELF_ORGANIZED_MAP, row, col );
-}
-
-// build fully-connected neural network
-int make_fully_connected_layer( layer * full_layer, int row, int col ) {
-    return create_layer( full_layer, FULL_CONNECTED_LAYER, row, col );
-}
-
-// build sparse-connected neural network
-int make_sparse_connected_layer( layer * sparse_layer, int row, int col ) {
-    return create_layer( sparse_layer, SPARSE_CONNECTED_LAYER, row, col );
-}
-
-// build input layer
-int make_input_layer( layer * input_layer, int row, int col ) {
-    return create_layer( input_layer, INPUT_LAYER, row, col );
-}
-
 
 // linking layers from input layer to output layer
 // input layer is not necessarily the input layer for entire network
 // output layer is not necessarily the output layer for entire network
 int link_layers(
-    connection * new_connection,
-    layer * input_layer,
-    layer * output_layer
+    connection * _c,
+    layer * _i,
+    layer * _o
 ) {
-    if ( !input_layer || !output_layer ) {
-        return R_FALSE;
+    if ( !_c || !_i || !_o ) {
+        _debug_();
+        return false;
     }
-    if (output_layer->_type == FULL_CONNECTED_LAYER ) {
+    if (_o->_type == LT_FULL ) {
         // last
-        new_connection->_last.num = output_layer->_map.row * output_layer->_map.col;
-        new_connection->_last.col = input_layer->_map.col;
-        new_connection->_last.row = input_layer->_map.row;
-        // now is the same
-        new_connection->_now.num = output_layer->_map.row * output_layer->_map.col;
-        new_connection->_now.col = input_layer->_map.col;
-        new_connection->_now.row = input_layer->_map.row;
+        _c->_last.num = _o->_map.row * _o->_map.col;
+        _c->_last.col = _i->_map.col;
+        _c->_last.row = _i->_map.row;
+        _c->_last.type = T_FLOAT;
         // reset matrix
-        matrix_alloc( &new_connection->_last );
-        matrix_alloc( &new_connection->_now );
-        matrix_set_zero( &new_connection->_last );
-        matrix_set_zero( &new_connection->_now );
-        // done
-    } else if ( output_layer->_type == SELF_ORGANIZED_MAP ) {
-    } else if ( output_layer->_type == SPARSE_CONNECTED_LAYER ) {
+        if ( !matrix_alloc( &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
+        if ( !matrix_set_zero( &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
+        // copy to current state map
+        if ( !matrix_copy( &_c->_now, &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
+    } else if ( _o->_type == LT_SOM ) {
+        // last
+        _c->_last.num = _o->_map.row * _o->_map.col;
+        _c->_last.col = _i->_map.col;
+        _c->_last.row = _i->_map.row;
+        _c->_last.type = _i->_map.type;
+        // reset matrix
+        if ( !matrix_alloc( &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
+        if ( !matrix_set_zero( &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
+        // copy to current state map
+        if ( !matrix_copy( &_c->_now, &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
+    } else if ( _o->_type == LT_SPARSE ) {
+        
     } else {
-        return R_FALSE;
+        return false;
     }
-    return R_TRUE;
+    return true;
+}
+
+// destroy connection
+int destroy_connection( connection * conn ) {
+    if ( conn ) {
+        if ( !matrix_free( &conn->_last ) || !matrix_free( &conn->_now ) ) {
+            return false;
+        }
+    }
+    return true;
 }
 
 
 // create a neural network with given layer number( depth )
 int create_neural_network( neural_network * network ) {
     if ( !network ) {
-        return R_FALSE;
+        return false;
     }
     network->_layers = (layer *) malloc(
         sizeof(layer) * MAX_NEURAL_NETWORK_DEPTH
@@ -137,7 +175,7 @@ int create_neural_network( neural_network * network ) {
         sizeof(connection) * (MAX_NEURAL_NETWORK_DEPTH - 1)
     );
     network->_depth = 0;
-    return R_TRUE;
+    return true;
 }
 
 // add new layer to network
@@ -145,30 +183,30 @@ int create_neural_network( neural_network * network ) {
 // application, because this function refers layers without reallocation.
 int neural_network_append_layer( neural_network * network, layer * new_layer ) {
     if ( (!network) || (!new_layer) ) {
-        return R_FALSE;
+        return false;
     }
     if ( network->_depth >= MAX_NEURAL_NETWORK_DEPTH ) {
-        return R_FALSE;
+        return false;
     }
     if ( !ref_layer( network->_layers + network->_depth, new_layer ) ) {
-        return R_FALSE;
+        return false;
     }
     network->_depth ++;
 
     // add connections to neural neural network
     if ( network->_depth == 1 ) { // if only input layer, then exit;
-        return R_TRUE;
+        return true;
     }
     if( !link_layers(
         network->_connections + (network->_depth - 2),
         network->_layers + (network->_depth - 2),
         network->_layers + (network->_depth - 1)
     ) ) {
-        return R_FALSE;
+        return false;
     }
 
 
-    return R_TRUE;
+    return true;
 }
 
 // compute forward

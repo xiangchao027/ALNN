@@ -5,14 +5,16 @@
 // function declaration
 #define DEBUG_CALL( func ) {\
     if( !(func) ) {\
-        fprintf( stderr, "@%d : call failure!\n", __LINE__ );\
+        fprintf( stderr, "%s@%d : call failure!\n", \
+        __FILE__, __LINE__ );\
         exit( 1 );\
     }\
 }
 
 #define DEBUG_ASSERT( expr ) {\
     if( !(expr) ) {\
-        fprintf( stderr, "@%d : runtime check failed!\n", __LINE__ );\
+        fprintf( stderr, "%s@%d : runtime check failed!\n", \
+        __FILE__, __LINE__ );\
         exit( 1 );\
     }\
 }

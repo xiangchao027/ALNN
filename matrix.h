@@ -6,6 +6,16 @@
 #include <math.h>
 #include <string.h>
 
+// show debug information
+#ifdef __DEBUG__
+#define _debug_() {\
+    fprintf( stdout, "%s:\t%d\n", __FILE__, __LINE__ );\
+}
+#else
+#define _debug_() {}
+#endif
+
+
 // basic data structures
 // matrix.type :
 //      b : unsigned char = binary, constrainted by 0/1 check
@@ -15,18 +25,35 @@
 //      l : long int = long integer
 //      f : float = float number
 //      d : double = double
-enum {
-    T_BINARY = 'b',
-    T_CHAR = 'c',
-    T_BYTE = 'u',
-    T_SHORT = 's',
-    T_LONG = 'l',
-    T_FLOAT = 'f',
-    T_DOUBLE = 'd'
+enum ELEMENT_TYPE {
+    T_BINARY,
+    T_CHAR,
+    T_BYTE,
+    T_SHORT,
+    T_LONG,
+    T_FLOAT,
+    T_DOUBLE,
+    T_RGB
 };
 
-enum { R_FALSE = 0 , R_TRUE = 1 };
+#define CHECK_ELEM_TYPE( _t ) (\
+    _t == T_BINARY  ||\
+    _t == T_CHAR    ||\
+    _t == T_BYTE    ||\
+    _t == T_SHORT   ||\
+    _t == T_LONG    ||\
+    _t == T_FLOAT   ||\
+    _t == T_DOUBLE  ||\
+    _t == T_RGB\
+)
 
+enum { false = 0 , true = 1 };
+
+typedef struct T_RGB{
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+} rgb;
 
 typedef struct T_MATRIX {
     int     num;        // number of instances
@@ -54,15 +81,19 @@ int matrix_set_elem(
     int col
 );
 int matrix_set_zero( matrix * m );  // set all elements to zero
+int matrix_direct_copy( matrix * nm, matrix * m ); // directly copy elements
+int matrix_copy( matrix * nm, matrix * m ); // deep copy
 
 // definitions of declared functions
 int matrix_alloc( matrix * m ) {
     size_t n;
     if ( !m ) {
-        return R_FALSE;
+        _debug_();
+        return false;
     }
     if ( m->num <= 0 || m->row <= 0 || m->col <= 0 ) {
-        return R_FALSE;
+        _debug_();
+        return false;
     }
     if ( m->type == T_BINARY ) {
         n = ( m->num * m->row * m->col + 8 ) / 8;
@@ -85,23 +116,27 @@ int matrix_alloc( matrix * m ) {
     } else if ( m->type == T_DOUBLE ) {
         n = m->num * m->row * m->col * sizeof(double);
         m->elem = (double *)malloc( n );
+    } else if ( m->type == T_RGB ) {
+        n = m->num * m->row * m->col * sizeof(rgb);
+        m->elem = (rgb *)malloc( n );
     } else {
-        return R_FALSE;
+        _debug_();
+        return false;
     }
-    return R_TRUE;
+    return true;
 }
 
 // deallocation of matrix
 int matrix_free( matrix * m ) {
     if ( !m ) {
-        return R_FALSE;
+        return false;
     }
     free( m->elem );
     m->num = 0;
     m->col = 0;
     m->row = 0;
     m->elem = 0;
-    return R_TRUE;
+    return true;
 }
 
 int matrix_get_elem(
@@ -115,16 +150,16 @@ int matrix_get_elem(
     unsigned char binary_elem;
 
     if ( !m || !elem) {
-        return R_FALSE;
+        return false;
     }
     if ( num < 0 || num >= m->num ) {
-        return R_FALSE;
+        return false;
     }
     if ( row < 0 || row >= m->row ) {
-        return R_FALSE;
+        return false;
     }
     if ( col < 0 || col >= m->col ) {
-        return R_FALSE;
+        return false;
     }
     if ( m->type == T_BINARY ) {
         i = num * m->row * m->col + row * m->col + col;
@@ -149,16 +184,19 @@ int matrix_get_elem(
     } else if ( m->type == T_DOUBLE ) {
         i = num * m->row * m->col + row * m->col + col;
         *((double *)elem) = ((double *)(m->elem))[i];
+    } else if ( m->type == T_RGB ) {
+        i = num * m->row * m->col + row * m->col + col;
+        *((rgb *)elem) = ((rgb *)(m->elem))[i];
     } else {
-        return R_FALSE;
+        return false;
     }
-    return R_TRUE;
+    return true;
 }
-//
+
 int matrix_set_zero( matrix * m ) {
-    int i, n, u;
+    size_t i, n, u;
     if ( !m ) {
-        return R_FALSE;
+        return false;
     }
     if ( m->type == T_BINARY ) {
         u = 1;
@@ -181,11 +219,14 @@ int matrix_set_zero( matrix * m ) {
     } else if ( m->type == T_DOUBLE ) {
         u = sizeof( double );
         n = m->num * m->row * m->col;
+    } else if ( m->type == T_RGB ) {
+        u = sizeof( rgb );
+        n = m->num * m->row * m->col;
     } else {
-        return R_FALSE;
+        return false;
     }
     memset( m->elem, 0, n * u );
-    return R_TRUE;
+    return true;
 }
 
 int matrix_set_elem(
@@ -199,16 +240,16 @@ int matrix_set_elem(
     unsigned char binary_elem;
 
     if ( !m || !elem) {
-        return R_FALSE;
+        return false;
     }
     if ( num < 0 || num >= m->num ) {
-        return R_FALSE;
+        return false;
     }
     if ( row < 0 || row >= m->row ) {
-        return R_FALSE;
+        return false;
     }
     if ( col < 0 || col >= m->col ) {
-        return R_FALSE;
+        return false;
     }
     if ( m->type == T_BINARY ) {
         i = num * m->row * m->col + row * m->col + col;
@@ -239,11 +280,73 @@ int matrix_set_elem(
     } else if ( m->type == T_DOUBLE ) {
         i = num * m->row * m->col + row * m->col + col;
         ((double *)(m->elem))[i] = *((double *)elem);
+    } else if ( m->type == T_RGB ) {
+        i = num * m->row * m->col + row * m->col + col;
+        ((rgb *)(m->elem))[i] = *((rgb *)elem);
     } else {
-        return R_FALSE;
+        return false;
     }
+    return true;
+}
 
-    return R_TRUE;
+
+// copy everything including elements from m to nm without reallocation
+// NOTE : matrix [nm] requires the same size as matrix [m]
+int matrix_direct_copy( matrix * nm, matrix * m ) {
+    size_t n;
+    if ( !nm || !m ) {
+        return false;
+    }
+    // check dimension
+    if (
+        nm->type != m->type ||
+        nm->num != m->num ||
+        nm->row != m->row ||
+        nm->col != m->col
+    ) {
+        return false;
+    }
+    // deep copy
+    if ( m->type == T_BINARY ) {
+        n = ( m->num * m->row * m->col + 8 ) / 8;
+    } else if ( m->type == T_CHAR ) {
+        n = m->num * m->row * m->col * sizeof(char);
+    } else if ( m->type == T_BYTE ) {
+        n = m->num * m->row * m->col * sizeof(unsigned char);
+    } else if ( m->type == T_SHORT ) {
+        n = m->num * m->row * m->col * sizeof(short int);
+    } else if ( m->type == T_LONG ) {
+        n = m->num * m->row * m->col * sizeof(long int);
+    } else if ( m->type == T_FLOAT ) {
+        n = m->num * m->row * m->col * sizeof(float);
+    } else if ( m->type == T_DOUBLE ) {
+        n = m->num * m->row * m->col * sizeof(double);
+    } else if ( m->type == T_RGB ) {
+        n = m->num * m->row * m->col * sizeof(rgb);
+    } else {
+        return false;
+    }
+    memcpy( (char*)(nm->elem), (char*)(m->elem), n );
+    return true;
+}
+
+// copy everything including elements from m to nm
+// NOTE : matrix [nm] will be covered, existing memory requires deallocation
+// outside this function
+int matrix_copy( matrix * nm, matrix * m ) {
+    size_t n;
+    if ( !nm || !m ) {
+        return false;
+    }
+    // deep copy
+    *nm = *m;
+    if ( !matrix_alloc( nm ) ) {
+        return false;
+    }
+    if ( !matrix_direct_copy( nm , m ) ) {
+        return false;
+    }
+    return true;
 }
 
 

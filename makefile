@@ -1,8 +1,12 @@
 CC = clang
-cnn.o :
-	$(CC) -o main.o main.c
-	$(CC) -o check/t_main.o check/t_main.c
+DEBUG = -D __DEBUG__
+TARGETS = main.o check/t_main.o
+$(TARGETS) :
+	$(CC) -o main.o $(DEBUG) main.c
+	$(CC) -o check/t_main.o $(DEBUG) check/t_main.c
+
 clean :
-	rm *.o && rm check/*.o
-test :
-	./check/t_main.o && ./main.o 1
+	@-rm *.o && rm check/*.o && echo "object files cleaned!"
+
+test : $(TARGETS)
+	@-./check/t_main.o && ./main.o 1

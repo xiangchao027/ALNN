@@ -30,9 +30,29 @@ int t_alnn() {
         _c._now.elem != 0 &&
         ((float*)_c._now.elem)[16*15+3] == 0
     );
-    // test destroy layer
-    DEBUG_CALL( destroy_layer( &_l ) );
+
+    // test som layer
+    DEBUG_CALL( destroy_connection( &_c ) );
     DEBUG_CALL( destroy_layer( &_nl ) );
+    DEBUG_CALL( create_layer( &_nl, LT_SOM, T_FLOAT, 16, 16) );
+    DEBUG_CALL( link_layers( &_c, &_l, &_nl ) );
+    DEBUG_ASSERT(
+        _c._last.num == 16*16 &&
+        _c._last.row == 32 &&
+        _c._last.col == 32 &&
+        _c._now.num == 16*16 &&
+        _c._now.row == 32 &&
+        _c._now.col == 32 &&
+        _c._last.elem != 0 &&
+        _c._now.elem != 0 &&
+        ((unsigned char*)_c._now.elem)[16*15+3] == 0
+    );
+
+    // must remember to RELEASE the connections
+    DEBUG_CALL( destroy_connection( &_c ) );
+    // test destroy layer
+    DEBUG_CALL( destroy_layer( &_nl ) );
+    DEBUG_CALL( destroy_layer( &_l ) );
 
     return true;
 }

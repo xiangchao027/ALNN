@@ -145,7 +145,25 @@ int link_layers(
             return false;
         }
     } else if ( _o->_type == LT_SPARSE ) {
-        
+        // last
+        _c->_last.num = _o->_map.row * _o->_map.col;
+        _c->_last.col = _i->_map.col;
+        _c->_last.row = _i->_map.row;
+        _c->_last.type = T_FLOAT;
+        // reset matrix
+        if ( !matrix_alloc( &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
+        if ( !matrix_set_zero( &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
+        // copy to current state map
+        if ( !matrix_copy( &_c->_now, &_c->_last ) ) {
+            _debug_();
+            return false;
+        }
     } else {
         return false;
     }
